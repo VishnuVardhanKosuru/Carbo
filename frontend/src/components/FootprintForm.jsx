@@ -2,16 +2,29 @@ import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import { api } from "../utils/api";
 
+// ---------------------------------------------------------------------------
+// Emission factors (mirrors backend constants for offline fallback)
+// ---------------------------------------------------------------------------
+
 const FACTORS = {
   transport_kg_per_km: 0.192,
   energy_kg_per_kwh: 0.233,
   diet: { vegetarian: 2.5, average: 3.8, meatlover: 5.0 },
+  global_avg_daily_kg: 4.7,
 };
 
+/**
+ * Compute a live carbon estimate from raw form values.
+ *
+ * @param {string} transport - Transport km input value.
+ * @param {string} energy - Energy kWh input value.
+ * @param {string} diet - Diet type key.
+ * @returns {string} Estimated kg CO₂ to 2 decimal places.
+ */
 function liveCalc(transport, energy, diet) {
   const t = parseFloat(transport) || 0;
   const e = parseFloat(energy) || 0;
-  const d = FACTORS.diet[diet] || 3.8;
+  const d = FACTORS.diet[diet] || FACTORS.diet.average;
   return (
     t * FACTORS.transport_kg_per_km +
     e * FACTORS.energy_kg_per_kwh +
@@ -19,12 +32,48 @@ function liveCalc(transport, energy, diet) {
   ).toFixed(2);
 }
 
+/**
+ * Assign an A–E letter grade based on ratio to global average.
+ * Mirrors the backend ``_compute_grade`` logic exactly.
+ *
+ * @param {number} totalKg - Total footprint in kg CO₂.
+ * @returns {string} Letter grade A–E.
+ */
+function computeGrade(totalKg) {
+  const ratio = totalKg / FACTORS.global_avg_daily_kg;
+  if (ratio <= 0.5) return "A";
+  if (ratio <= 0.75) return "B";
+  if (ratio <= 1.0) return "C";
+  if (ratio <= 1.5) return "D";
+  return "E";
+}
+
+/** @param {string} grade */
+function gradeColor(grade) {
+  if (["A", "B"].includes(grade)) return "#22c55e";
+  if (grade === "C") return "#f59e0b";
+  return "#ef4444";
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+/**
+ * FootprintForm — daily activity logger and calculator.
+ *
+ * @param {Object}   props
+ * @param {Function} [props.onResult]    - Called with the full result record.
+ * @param {Function} [props.onTips]      - Called with the tips response.
+ * @param {boolean}  props.apiAvailable  - Whether the FastAPI backend is online.
+ */
 export default function FootprintForm({ onResult, onTips, apiAvailable }) {
   const [transport, setTransport] = useState("");
   const [energy, setEnergy] = useState("");
   const [diet, setDiet] = useState("average");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
   const preview = useMemo(
     () => liveCalc(transport, energy, diet),
@@ -36,6 +85,8 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+
     const payload = {
       transport_km: parseFloat(transport) || 0,
       energy_kwh: parseFloat(energy) || 0,
@@ -45,18 +96,22 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
 
     try {
       let calcResult, tips;
+
       if (apiAvailable) {
         [calcResult, tips] = await Promise.all([
           api.calculate(payload),
           api.getTips(payload),
         ]);
-        // Also log to backend
+        // Persist to backend store (best-effort — don't block on failure)
         await api.logRecord({
           ...payload,
           footprint_kg: calcResult.total_kg,
+        }).catch(() => {
+          // Log record failure is non-fatal; history is maintained locally
         });
       } else {
-        // Local fallback calculation
+        // Offline local fallback calculation
+        const totalKg = parseFloat(preview);
         calcResult = {
           transport_kg: parseFloat(
             (payload.transport_km * FACTORS.transport_kg_per_km).toFixed(4),
@@ -65,14 +120,10 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
             (payload.energy_kwh * FACTORS.energy_kg_per_kwh).toFixed(4),
           ),
           diet_kg: FACTORS.diet[payload.diet],
-          total_kg: parseFloat(preview),
+          total_kg: totalKg,
           record_date: today(),
-          grade:
-            parseFloat(preview) / 4.7 <= 0.75
-              ? "B"
-              : parseFloat(preview) / 4.7 <= 1
-                ? "C"
-                : "D",
+          grade: computeGrade(totalKg),
+          equivalence: null,
         };
         tips = {
           tips: [
@@ -90,22 +141,19 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
       });
       onTips?.(tips);
     } catch (err) {
-      console.error("Calculation error:", err);
+      const message =
+        err?.message || "Calculation failed. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
 
-  const gradeColor = result
-    ? ["A", "B"].includes(result.grade)
-      ? "#22c55e"
-      : result.grade === "C"
-        ? "#f59e0b"
-        : "#ef4444"
-    : "inherit";
+  const color = result ? gradeColor(result.grade) : "inherit";
 
   return (
     <form id="activityForm" onSubmit={handleSubmit}>
+      {/* Offline mode warning */}
       {!apiAvailable && (
         <div className="api-warning">
           <div className="api-warning-dot" />
@@ -113,13 +161,22 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
         </div>
       )}
 
-      {/* Live score */}
+      {/* Submission error banner */}
+      {error && (
+        <div className="form-error-banner" role="alert">
+          <span className="form-error-icon">⚠️</span>
+          {error}
+        </div>
+      )}
+
+      {/* Live score preview */}
       <div className="score-preview">
         <span className="score-label">⚡ Live estimate</span>
         <span className="score-value">{preview}</span>
         <span className="score-unit">kg CO₂</span>
       </div>
 
+      {/* Transport field */}
       <div className="field-group">
         <label className="field-label" htmlFor="transport">
           <span className="field-icon">🚗</span> Transport
@@ -138,6 +195,7 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
         />
       </div>
 
+      {/* Energy field */}
       <div className="field-group">
         <label className="field-label" htmlFor="energy">
           <span className="field-icon">⚡</span> Energy
@@ -156,6 +214,7 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
         />
       </div>
 
+      {/* Diet field */}
       <div className="field-group">
         <label className="field-label" htmlFor="diet">
           <span className="field-icon">🥗</span> Diet
@@ -183,21 +242,20 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
         {loading ? "⏳ Calculating…" : "🌿 Calculate & Log"}
       </button>
 
+      {/* Result card */}
       {result && (
         <div className="result-card" id="footprintResult" aria-live="polite">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: ".4rem",
-              marginBottom: ".4rem",
-            }}
-          >
-            <span className="result-grade" style={{ color: gradeColor }}>
+          <div className="result-header">
+            <span className="result-grade" style={{ color }}>
               {result.grade}
             </span>
             <span className="result-total">{result.total_kg} kg CO₂ today</span>
           </div>
+
+          {result.equivalence && (
+            <p className="result-equivalence">{result.equivalence}</p>
+          )}
+
           <div className="result-breakdown">
             <div className="breakdown-item">
               <div className="breakdown-icon">🚗</div>

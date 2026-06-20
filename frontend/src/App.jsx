@@ -10,10 +10,19 @@ import EcoGrid from "./components/EcoGrid.jsx";
 import { useHistory } from "./hooks/useHistory.js";
 import { api } from "./utils/api.js";
 
-// ---- Background particles ----
+// ---------------------------------------------------------------------------
+// Background particle animation
+// ---------------------------------------------------------------------------
+
+/**
+ * Initialise a floating particle canvas overlay.
+ *
+ * @param {HTMLCanvasElement} canvas - Target canvas element.
+ */
 function initParticles(canvas) {
   const ctx = canvas.getContext("2d");
   let particles;
+
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -26,6 +35,7 @@ function initParticles(canvas) {
       a: Math.random() * 0.35 + 0.05,
     }));
   }
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const dark = document.body.classList.contains("dark");
@@ -45,10 +55,15 @@ function initParticles(canvas) {
     }
     requestAnimationFrame(draw);
   }
+
   resize();
   window.addEventListener("resize", resize);
   draw();
 }
+
+// ---------------------------------------------------------------------------
+// App component
+// ---------------------------------------------------------------------------
 
 export default function App() {
   const [dark, setDark] = useState(() => {
@@ -60,20 +75,21 @@ export default function App() {
   const [tips, setTips] = useState(null);
   const [apiAvailable, setApiAvailable] = useState(false);
   const canvasRef = useRef(null);
-  const { history, addRecord, clearAll, goal, setGoal, pledges, addPledge, removePledge } = useHistory();
+  const { history, addRecord, clearAll, goal, setGoal, pledges, addPledge, removePledge } =
+    useHistory();
 
-  // Theme
+  // Sync dark-mode class and persist preference
   useEffect(() => {
     document.body.classList.toggle("dark", dark);
     localStorage.setItem("cf_theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // Particles
+  // Start particle animation
   useEffect(() => {
     if (canvasRef.current) initParticles(canvasRef.current);
   }, []);
 
-  // Check API availability
+  // Check API availability on mount
   useEffect(() => {
     api
       .health()
@@ -81,6 +97,7 @@ export default function App() {
       .catch(() => setApiAvailable(false));
   }, []);
 
+  /** Add a new record to local history after a successful form submission. */
   const handleResult = useCallback(
     (record) => {
       addRecord({
@@ -94,6 +111,7 @@ export default function App() {
     [addRecord],
   );
 
+  /** Store the latest tips response for display. */
   const handleTips = useCallback((t) => setTips(t), []);
 
   return (
@@ -106,7 +124,7 @@ export default function App() {
         apiAvailable={apiAvailable}
       />
 
-      {/* Hero */}
+      {/* Hero section */}
       <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-content">
           <p className="hero-eyebrow">🌍 Carbon Footprint Tracker</p>
@@ -134,51 +152,46 @@ export default function App() {
         </div>
       </section>
 
-      {/* Stats Strip */}
+      {/* Stats strip */}
       <StatStrip history={history} goal={goal} onGoalChange={setGoal} />
 
       {/* Dashboard */}
       <main className="dashboard" id="dashboard">
-        {/* Form panel */}
+        {/* Activity form panel */}
         <section className="panel panel-form" aria-label="Log Activity">
           <div className="panel-header">
             <span className="panel-icon">📋</span>
             <div>
               <div className="panel-title">Log Today&apos;s Activities</div>
               <div className="panel-sub">
-                Enter your daily transport, energy & diet
+                Enter your daily transport, energy &amp; diet
               </div>
             </div>
           </div>
+
           <FootprintForm
             onResult={handleResult}
             onTips={handleTips}
             apiAvailable={apiAvailable}
           />
 
+          {/* Eco tips */}
           {tips && tips.tips?.length > 0 && (
             <div className="tips-container" id="tips">
               <div className="tips-heading">💡 Personalised Tips to Reduce</div>
-              <ul className="tips-list" style={{ listStyle: "none", padding: 0 }}>
+              <ul className="tips-list">
                 {tips.tips.map((t, i) => {
                   const isPledged = pledges.includes(t);
                   return (
-                    <li key={i} className="tips-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px' }}>
-                      <span style={{ paddingRight: '1rem' }}>{t}</span>
-                      <button 
-                        onClick={() => isPledged ? removePledge(t) : addPledge(t)}
-                        style={{ 
-                          whiteSpace: 'nowrap', 
-                          padding: '0.4rem 0.8rem', 
-                          borderRadius: '4px', 
-                          border: isPledged ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.2)',
-                          background: isPledged ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-                          color: isPledged ? '#10b981' : 'inherit',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
+                    <li key={i} className="tips-item tips-item-row">
+                      <span className="tips-item-text">{t}</span>
+                      <button
+                        className={`pledge-btn${isPledged ? " pledge-btn--active" : ""}`}
+                        onClick={() =>
+                          isPledged ? removePledge(t) : addPledge(t)
+                        }
                       >
-                        {isPledged ? '✓ Pledged' : 'Pledge'}
+                        {isPledged ? "✓ Pledged" : "Pledge"}
                       </button>
                     </li>
                   );
@@ -187,19 +200,23 @@ export default function App() {
             </div>
           )}
 
+          {/* Active pledges */}
           {pledges.length > 0 && (
-            <div className="pledges-container" style={{ marginTop: "1.5rem", padding: "1rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-              <div style={{ color: "#10b981", fontWeight: "bold", marginBottom: "0.5rem" }}>🌿 My Action Pledges</div>
-              <ul style={{ paddingLeft: "1.2rem", margin: 0, fontSize: "0.9rem" }}>
+            <div className="pledges-container">
+              <div className="pledges-heading">🌿 My Action Pledges</div>
+              <ul className="pledge-list">
                 {pledges.map((p, i) => (
-                  <li key={i} style={{ marginBottom: "0.3rem" }}>{p}</li>
+                  <li key={i} className="pledge-item">
+                    {p}
+                  </li>
                 ))}
               </ul>
             </div>
           )}
 
+          {/* Clear history button */}
           {history.length > 0 && (
-            <div style={{ marginTop: "1.5rem", textAlign: "right" }}>
+            <div className="clear-history-row">
               <button className="btn-ghost" onClick={clearAll}>
                 🗑️ Clear History
               </button>
@@ -207,7 +224,7 @@ export default function App() {
           )}
         </section>
 
-        {/* Chart panel */}
+        {/* Trend chart panel */}
         <section
           className="panel panel-chart"
           aria-label="Footprint trend chart"
@@ -222,7 +239,7 @@ export default function App() {
           <TrendChart history={history} />
         </section>
 
-        {/* 3D panel */}
+        {/* 3D visualisation panel */}
         <section className="panel panel-3d" aria-label="3D bar chart">
           <div className="panel-header">
             <span className="panel-icon">📊</span>

@@ -24,6 +24,13 @@ python-dotenv==1.0.1
 cachetools==5.3.3
 
 # ---------------------------------------------------------------------------
+# Cloud / GCP dependencies (optional — graceful fallback if unavailable)
+# ---------------------------------------------------------------------------
+
+# Google Cloud Firestore persistence (used when FIRESTORE_PROJECT env var is set)
+# google-cloud-firestore==2.16.1
+
+# ---------------------------------------------------------------------------
 # Test / dev dependencies
 # ---------------------------------------------------------------------------
 pytest==8.2.2

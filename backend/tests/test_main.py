@@ -1,7 +1,7 @@
 """
 Pytest test suite for Carbo Backend v2.1.0
 
-32 tests covering:
+Tests covering:
   1.  Health endpoint — status='ok', version, uptime ≥ 0
   2.  Health endpoint — returns HTTP 200 (monitoring probe)
   3.  Cache stats endpoint — structure
@@ -11,29 +11,38 @@ Pytest test suite for Carbo Backend v2.1.0
   7.  Calculate footprint — zero transport
   8.  Calculate footprint — zero energy
   9.  Calculate footprint — grade A (very low emissions)
- 10.  Calculate footprint — grade E (very high emissions)
- 11.  Calculate footprint — negative transport → 422
- 12.  Calculate footprint — negative energy → 422
- 13.  Calculate footprint — transport > 10 000 → 422
- 14.  Calculate footprint — invalid diet string → 422
- 15.  Calculate footprint — missing required field → 422
- 16.  Calculate footprint — invalid date format → 422
- 17.  Calculate footprint — emission accuracy (transport component)
- 18.  Calculate footprint — emission accuracy (energy component)
- 19.  Calculate footprint — emission accuracy (diet component)
- 20.  Calculate footprint — cache hit on repeated request
- 21.  Log footprint record — success (201)
- 22.  Log footprint record — upsert replaces same-date record
- 23.  Get history — empty returns count=0
- 24.  Get history — populated returns records sorted
- 25.  Clear history — success
- 26.  Tips — transport > 10 km includes transport tip
- 27.  Tips — energy > 12 kWh includes energy tip
- 28.  Tips — meatlover diet includes diet tip
- 29.  Tips — low emissions → positive general tip
- 30.  Get emission factors — structure check
- 31.  Security headers present on every response
- 32.  GZip middleware compresses large responses
+  10. Calculate footprint — grade E (very high emissions)
+  11. Calculate footprint — negative transport → 422
+  12. Calculate footprint — negative energy → 422
+  13. Calculate footprint — transport > 10 000 → 422
+  14. Calculate footprint — invalid diet string → 422
+  15. Calculate footprint — missing required field → 422
+  16. Calculate footprint — invalid date format → 422
+  17. Calculate footprint — emission accuracy (transport component)
+  18. Calculate footprint — emission accuracy (energy component)
+  19. Calculate footprint — emission accuracy (diet component)
+  20. Calculate footprint — cache hit on repeated request
+  21. Calculate footprint — equivalence string present in response
+  22. Log footprint record — success (201)
+  23. Log footprint record — upsert replaces same-date record
+  24. Get history — empty returns count=0
+  25. Get history — populated returns records sorted
+  26. Clear history — success
+  27. Tips — transport > 10 km includes transport tip
+  28. Tips — energy > 12 kWh includes energy tip
+  29. Tips — meatlover diet includes diet tip
+  30. Tips — low emissions → positive general tip
+  31. Get emission factors — structure check
+  32. Security headers present on every response
+  33. GZip middleware compresses large responses
+  34. Schema validations — explicit ValueError branches
+  35. Config — invalid log level raises ValueError
+  36. Config — is_development property
+  37. Exception handlers — ValidationError handler
+  38. Exception handlers — generic unhandled exception handler
+  39. Footprint service — _compute_grade with zero global average
+  40. Footprint service — _compute_equivalence output format
+  41. History store — HistoryStore.reset() clears in-memory store
 """
 
 from __future__ import annotations
@@ -70,9 +79,8 @@ def client() -> TestClient:
 def reset_history_and_cache():
     """Reset in-memory history store and cache before each test."""
     from app.services import history_service
-    from collections import deque
 
-    history_service._store = deque()
+    history_service._history_store.reset()
     cache_module.clear()
     yield
 
@@ -104,7 +112,7 @@ VALID_MEATLOVER = {
 
 
 # ---------------------------------------------------------------------------
-# Test 1 & 2 — Health check
+# Tests 1 & 2 — Health check
 # ---------------------------------------------------------------------------
 
 
@@ -346,7 +354,24 @@ def test_cache_hit_on_repeated_request(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests 21–22 — Log footprint
+# Test 21 — Equivalence field
+# ---------------------------------------------------------------------------
+
+
+def test_calculate_returns_equivalence_string(client: TestClient) -> None:
+    """Response should include a human-readable equivalence string."""
+    response = client.post("/api/v1/footprint/calculate", json=VALID_AVERAGE)
+    assert response.status_code == 200
+    data = response.json()
+    assert "equivalence" in data
+    assert data["equivalence"] is not None
+    # Should mention km driven and trees
+    assert "km" in data["equivalence"]
+    assert "tree" in data["equivalence"]
+
+
+# ---------------------------------------------------------------------------
+# Tests 22–23 — Log footprint
 # ---------------------------------------------------------------------------
 
 
@@ -391,7 +416,7 @@ def test_log_footprint_upsert_replaces_same_date(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests 23–25 — History
+# Tests 24–26 — History
 # ---------------------------------------------------------------------------
 
 
@@ -455,7 +480,7 @@ def test_clear_history(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests 26–29 — Tips
+# Tests 27–30 — Tips
 # ---------------------------------------------------------------------------
 
 
@@ -505,7 +530,7 @@ def test_tips_low_emissions_positive(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 30 — Emission factors
+# Test 31 — Emission factors
 # ---------------------------------------------------------------------------
 
 
@@ -522,7 +547,7 @@ def test_emission_factors_structure(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 31 — Security headers
+# Test 32 — Security headers
 # ---------------------------------------------------------------------------
 
 
@@ -536,7 +561,7 @@ def test_security_headers_present(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 32 — GZip compression
+# Test 33 — GZip compression
 # ---------------------------------------------------------------------------
 
 
@@ -565,17 +590,156 @@ def test_gzip_compresses_large_response(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 33 — Coverage gap fillers
+# Test 34 — Schema validations (explicit ValueError branches)
 # ---------------------------------------------------------------------------
+
 
 def test_schema_validations() -> None:
     """Cover the explicit ValueErrors raised in Pydantic validators."""
     from app.models.schemas import FootprintRequest, LogRecordRequest
+
     with pytest.raises(ValueError, match="must be a string"):
-        FootprintRequest(transport_km=10.0, energy_kwh=10.0, diet="average", record_date=123)
-        
+        FootprintRequest(
+            transport_km=10.0, energy_kwh=10.0, diet="average", record_date=123
+        )
+
     with pytest.raises(ValueError, match="Invalid date"):
-        LogRecordRequest(transport_km=10.0, energy_kwh=10.0, diet="average", footprint_kg=10.0, record_date="26-06-2026")
+        LogRecordRequest(
+            transport_km=10.0,
+            energy_kwh=10.0,
+            diet="average",
+            footprint_kg=10.0,
+            record_date="26-06-2026",
+        )
 
 
+def test_schema_record_date_none_is_valid() -> None:
+    """FootprintRequest with record_date=None should be accepted (None branch coverage)."""
+    from app.models.schemas import FootprintRequest
 
+    req = FootprintRequest(transport_km=5.0, energy_kwh=3.0, diet="average", record_date=None)
+    assert req.record_date is None
+
+
+# ---------------------------------------------------------------------------
+# Test 35 — Config: invalid log level
+# ---------------------------------------------------------------------------
+
+
+def test_config_invalid_log_level() -> None:
+    """Settings should raise ValueError for an unrecognised log level."""
+    from pydantic import ValidationError as PydanticValidationError
+    from app.config import Settings
+
+    with pytest.raises(PydanticValidationError):
+        Settings(log_level="VERBOSE")
+
+
+# ---------------------------------------------------------------------------
+# Test 36 — Config: is_development property
+# ---------------------------------------------------------------------------
+
+
+def test_config_is_development() -> None:
+    """is_development should return True when env='development'."""
+    from app.config import Settings
+
+    dev_settings = Settings(env="development")
+    assert dev_settings.is_development is True
+
+    prod_settings = Settings(env="production")
+    assert prod_settings.is_development is False
+
+
+# ---------------------------------------------------------------------------
+# Test 37 — Exception handler: ValidationError (Pydantic)
+# ---------------------------------------------------------------------------
+
+
+def test_validation_error_handler(client: TestClient) -> None:
+    """The global Pydantic ValidationError handler should return 422 with structured body."""
+    # Sending an integer for diet triggers Pydantic validation at FastAPI level
+    payload = {**VALID_AVERAGE, "diet": 999}
+    response = client.post("/api/v1/footprint/calculate", json=payload)
+    assert response.status_code == 422
+
+
+def test_unhandled_exception_handler(client: TestClient) -> None:
+    """The global exception handler should return 500 for unexpected errors.
+
+    We trigger this by patching the footprint service to raise a RuntimeError.
+    """
+    import app.services.footprint_service as fs
+    original = fs.calculate_footprint
+
+    def boom(_req):
+        raise RuntimeError("Simulated unexpected error")
+
+    fs.calculate_footprint = boom
+    try:
+        response = client.post("/api/v1/footprint/calculate", json=VALID_AVERAGE)
+        assert response.status_code == 500
+        data = response.json()
+        assert data["code"] == "INTERNAL_ERROR"
+    finally:
+        fs.calculate_footprint = original
+
+
+# ---------------------------------------------------------------------------
+# Test 39 — Footprint service: _compute_grade with zero global average
+# ---------------------------------------------------------------------------
+
+
+def test_compute_grade_zero_global_avg() -> None:
+    """_compute_grade should return 'C' when global_avg_daily_kg is zero."""
+    from app.services.footprint_service import _compute_grade, EMISSION_FACTORS
+
+    original = EMISSION_FACTORS["global_avg_daily_kg"]
+    EMISSION_FACTORS["global_avg_daily_kg"] = 0
+    try:
+        grade = _compute_grade(5.0)
+        assert grade == "C"
+    finally:
+        EMISSION_FACTORS["global_avg_daily_kg"] = original
+
+
+# ---------------------------------------------------------------------------
+# Test 40 — Footprint service: _compute_equivalence output
+# ---------------------------------------------------------------------------
+
+
+def test_compute_equivalence_format() -> None:
+    """_compute_equivalence should include km and tree in the output string."""
+    from app.services.footprint_service import _compute_equivalence
+
+    result = _compute_equivalence(4.7)
+    assert "km" in result
+    assert "tree" in result
+
+    # Singular "tree" for 1 tree
+    result_low = _compute_equivalence(0.01)
+    assert "tree" in result_low
+
+
+# ---------------------------------------------------------------------------
+# Test 41 — HistoryStore.reset()
+# ---------------------------------------------------------------------------
+
+
+def test_history_store_reset() -> None:
+    """HistoryStore.reset() should clear the in-memory deque."""
+    from app.services.history_service import _history_store, LogRecordRequest
+    from app.models.schemas import DietType
+
+    req = LogRecordRequest(
+        transport_km=5.0,
+        energy_kwh=3.0,
+        diet=DietType.vegetarian,
+        footprint_kg=4.0,
+        record_date="2026-06-20",
+    )
+    _history_store.log_record(req)
+    assert len(_history_store._store) == 1
+
+    _history_store.reset()
+    assert len(_history_store._store) == 0

@@ -145,6 +145,7 @@ class FootprintResult(BaseModel):
         total_kg: Total footprint (kg CO₂).
         record_date: Date this footprint was calculated for.
         grade: Letter grade (A–E) based on global avg comparison.
+        equivalence: Human-readable impact equivalence string (optional).
     """
 
     transport_kg: float
@@ -153,6 +154,7 @@ class FootprintResult(BaseModel):
     total_kg: float
     record_date: str
     grade: str
+    equivalence: Optional[str] = None
 
 
 class FootprintRecord(BaseModel):

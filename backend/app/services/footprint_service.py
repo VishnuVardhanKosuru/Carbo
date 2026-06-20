@@ -44,9 +44,22 @@ _GRADE_THRESHOLDS: list[tuple[float, str]] = [
     (float("inf"), "E"),  # > 150%
 ]
 
+# ---------------------------------------------------------------------------
+# Equivalence constants — for human-readable impact descriptions
+# ---------------------------------------------------------------------------
+
+# Average car emits 0.192 kg CO₂/km; 1 kg CO₂ ≈ 5.21 km driven
+_KM_PER_KG_CO2: float = 1 / 0.192
+
+# A mature tree absorbs ~21.7 kg CO₂/year → ~0.0595 kg/day
+_KG_CO2_PER_TREE_PER_DAY: float = 21.7 / 365
+
 
 def _compute_grade(total_kg: float) -> str:
     """Assign a letter grade (A–E) based on comparison with the global average.
+
+    If the global average is zero (edge case in testing), defaults to grade C
+    to avoid a division-by-zero error.
 
     Args:
         total_kg: Calculated total footprint in kg CO₂.
@@ -55,17 +68,41 @@ def _compute_grade(total_kg: float) -> str:
         Single letter grade string.
     """
     global_avg = EMISSION_FACTORS["global_avg_daily_kg"]
-    ratio = total_kg / global_avg if global_avg else 1.0
+    if not global_avg:
+        return "C"
+    ratio = total_kg / global_avg
     for threshold, grade in _GRADE_THRESHOLDS:
         if ratio <= threshold:
             return grade
-    return "E"
+    return "E"  # pragma: no cover
+
+
+def _compute_equivalence(total_kg: float) -> str:
+    """Generate a human-readable equivalence string for the given footprint.
+
+    Provides two intuitive comparisons:
+    - Equivalent kilometres driven by an average car.
+    - Number of trees required to offset the footprint for one day.
+
+    Args:
+        total_kg: Total daily footprint in kg CO₂.
+
+    Returns:
+        Formatted equivalence string suitable for UI display.
+    """
+    km_driven = round(total_kg * _KM_PER_KG_CO2, 1)
+    trees_needed = max(1, round(total_kg / _KG_CO2_PER_TREE_PER_DAY))
+    return (
+        f"≈ {km_driven} km driven by car · "
+        f"{trees_needed} tree{'s' if trees_needed != 1 else ''} needed to offset"
+    )
 
 
 def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     """Calculate the carbon footprint for a single day's activities.
 
-    Emission formula:
+    Emission formula::
+
         transport_kg = transport_km × 0.192
         energy_kg    = energy_kwh  × 0.233
         diet_kg      = diet_factor[diet_type]
@@ -75,7 +112,8 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
         request: Validated ``FootprintRequest`` containing activity data.
 
     Returns:
-        ``FootprintResult`` with per-category breakdown, total, date, and grade.
+        ``FootprintResult`` with per-category breakdown, total, date, grade,
+        and a human-readable equivalence string.
     """
     transport_kg = round(
         request.transport_km * EMISSION_FACTORS["transport_kg_per_km"], 4
@@ -85,6 +123,7 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     total_kg = round(transport_kg + energy_kg + diet_kg, 2)
     grade = _compute_grade(total_kg)
     record_date = request.record_date or date.today().isoformat()
+    equivalence = _compute_equivalence(total_kg)
 
     logger.info(
         "Footprint calculated.",
@@ -104,6 +143,7 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
         total_kg=total_kg,
         record_date=record_date,
         grade=grade,
+        equivalence=equivalence,
     )
 
 

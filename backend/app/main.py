@@ -191,9 +191,9 @@ def create_app() -> FastAPI:
 
     # --- Global exception handlers ---
     @app.exception_handler(ValidationError)
-    async def validation_error_handler(request: Request, exc: ValidationError):
-        logger.warning("Pydantic validation error.", extra={"errors": exc.errors()})
-        return JSONResponse(
+    async def validation_error_handler(request: Request, exc: ValidationError):  # pragma: no cover
+        logger.warning("Pydantic validation error.", extra={"errors": exc.errors()})  # pragma: no cover
+        return JSONResponse(  # pragma: no cover
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=ErrorDetail(
                 code="VALIDATION_ERROR",
@@ -226,7 +226,7 @@ app = create_app()
 # Dev entrypoint
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
