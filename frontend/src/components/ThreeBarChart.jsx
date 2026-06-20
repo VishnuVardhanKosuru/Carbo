@@ -190,7 +190,14 @@ export default function ThreeBarChart({ history }) {
 
   return (
     <div className="three-wrapper">
-      <div ref={mountRef} className="three-container" />
+      <div
+        ref={mountRef}
+        style={{ width: "100%", height: "100%" }}
+        role="img"
+        aria-label="Interactive 3D bar chart of carbon emissions history"
+        tabIndex="0"
+        className="three-container"
+      />
       {!hasData && (
         <div className="three-empty">
           <span>📊</span>

@@ -7,12 +7,11 @@ attacks, mirroring the pattern from ElectionApp schemas.py.
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from enum import Enum
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # ---------------------------------------------------------------------------

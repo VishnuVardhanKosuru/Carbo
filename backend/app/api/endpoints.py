@@ -19,24 +19,20 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import ValidationError
+from fastapi import APIRouter, status
 
 from app import cache as cache_module
 from app.config import get_settings
 from app.models.schemas import (
     CacheStatsResponse,
     EmissionFactors,
-    ErrorDetail,
     FootprintRequest,
     FootprintResult,
     HealthResponse,
     HistoryResponse,
     LogRecordRequest,
     TipsResponse,
-    DietType,
 )
 from app.services import footprint_service, history_service, tips_service
 

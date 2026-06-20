@@ -8,7 +8,6 @@ Mirrors the ElectionApp config pattern for consistency.
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -42,7 +41,8 @@ class Settings(BaseSettings):
     port: int = Field(default=8001, ge=1, le=65535, description="Listening port.")
     log_level: str = Field(default="INFO", description="Python log level.")
     allowed_origins: str = Field(
-        default="*", description="Comma-separated CORS origins."
+        default="http://localhost:5173,http://localhost:8000,http://127.0.0.1:5173",
+        description="Comma-separated CORS origins.",
     )
     cache_ttl_seconds: int = Field(
         default=300, ge=0, description="Cache TTL in seconds."

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 import logging.config
-import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -108,6 +107,8 @@ async def _security_headers_middleware(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=()"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
     return response
 
 

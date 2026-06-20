@@ -12,11 +12,9 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import deque
-from datetime import date
 from typing import Any
 
 from app.models.schemas import (
-    DietType,
     FootprintRecord,
     HistoryResponse,
     LogRecordRequest,

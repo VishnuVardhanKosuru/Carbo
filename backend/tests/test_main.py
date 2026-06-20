@@ -162,7 +162,7 @@ def test_calculate_average_diet(client: TestClient) -> None:
 
 def test_calculate_vegetarian_diet(client: TestClient) -> None:
     """Vegetarian diet should produce lower footprint than average."""
-    avg_resp = client.post("/api/v1/footprint/calculate", json=VALID_AVERAGE)
+    client.post("/api/v1/footprint/calculate", json=VALID_AVERAGE)
     veg_resp = client.post("/api/v1/footprint/calculate", json=VALID_VEGETARIAN)
     # Vegetarian with much lower activity should have lower total
     assert veg_resp.status_code == 200
@@ -562,3 +562,20 @@ def test_gzip_compresses_large_response(client: TestClient) -> None:
     # TestClient decompresses transparently, so we just verify the response is valid JSON.
     data = response.json()
     assert data["count"] == 30
+
+
+# ---------------------------------------------------------------------------
+# Test 33 — Coverage gap fillers
+# ---------------------------------------------------------------------------
+
+def test_schema_validations() -> None:
+    """Cover the explicit ValueErrors raised in Pydantic validators."""
+    from app.models.schemas import FootprintRequest, LogRecordRequest
+    with pytest.raises(ValueError, match="must be a string"):
+        FootprintRequest(transport_km=10.0, energy_kwh=10.0, diet="average", record_date=123)
+        
+    with pytest.raises(ValueError, match="Invalid date"):
+        LogRecordRequest(transport_km=10.0, energy_kwh=10.0, diet="average", footprint_kg=10.0, record_date="26-06-2026")
+
+
+

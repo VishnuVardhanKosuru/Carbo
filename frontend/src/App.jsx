@@ -60,7 +60,7 @@ export default function App() {
   const [tips, setTips] = useState(null);
   const [apiAvailable, setApiAvailable] = useState(false);
   const canvasRef = useRef(null);
-  const { history, addRecord, clearAll } = useHistory();
+  const { history, addRecord, clearAll, goal, setGoal } = useHistory();
 
   // Theme
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function App() {
       </section>
 
       {/* Stats Strip */}
-      <StatStrip history={history} />
+      <StatStrip history={history} goal={goal} onGoalChange={setGoal} />
 
       {/* Dashboard */}
       <main className="dashboard" id="dashboard">
