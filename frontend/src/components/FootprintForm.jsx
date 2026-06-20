@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import PropTypes from "prop-types";
 import { api } from "../utils/api";
 
 const FACTORS = {
@@ -183,7 +184,7 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
       </button>
 
       {result && (
-        <div className="result-card" id="footprintResult">
+        <div className="result-card" id="footprintResult" aria-live="polite">
           <div
             style={{
               display: "flex",
@@ -219,3 +220,9 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
     </form>
   );
 }
+
+FootprintForm.propTypes = {
+  onResult: PropTypes.func,
+  onTips: PropTypes.func,
+  apiAvailable: PropTypes.bool.isRequired,
+};

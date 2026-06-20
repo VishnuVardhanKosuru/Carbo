@@ -60,7 +60,7 @@ export default function App() {
   const [tips, setTips] = useState(null);
   const [apiAvailable, setApiAvailable] = useState(false);
   const canvasRef = useRef(null);
-  const { history, addRecord, clearAll, goal, setGoal } = useHistory();
+  const { history, addRecord, clearAll, goal, setGoal, pledges, addPledge, removePledge } = useHistory();
 
   // Theme
   useEffect(() => {
@@ -144,7 +144,7 @@ export default function App() {
           <div className="panel-header">
             <span className="panel-icon">📋</span>
             <div>
-              <div className="panel-title">Log Today's Activities</div>
+              <div className="panel-title">Log Today&apos;s Activities</div>
               <div className="panel-sub">
                 Enter your daily transport, energy & diet
               </div>
@@ -158,19 +158,48 @@ export default function App() {
 
           {tips && tips.tips?.length > 0 && (
             <div className="tips-container" id="tips">
-              <div className="tips-heading">💡 Personalised Tips</div>
-              <ul className="tips-list">
-                {tips.tips.map((t, i) => (
-                  <li key={i} className="tips-item">
-                    {t}
-                  </li>
+              <div className="tips-heading">💡 Personalised Tips to Reduce</div>
+              <ul className="tips-list" style={{ listStyle: "none", padding: 0 }}>
+                {tips.tips.map((t, i) => {
+                  const isPledged = pledges.includes(t);
+                  return (
+                    <li key={i} className="tips-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px' }}>
+                      <span style={{ paddingRight: '1rem' }}>{t}</span>
+                      <button 
+                        onClick={() => isPledged ? removePledge(t) : addPledge(t)}
+                        style={{ 
+                          whiteSpace: 'nowrap', 
+                          padding: '0.4rem 0.8rem', 
+                          borderRadius: '4px', 
+                          border: isPledged ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.2)',
+                          background: isPledged ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                          color: isPledged ? '#10b981' : 'inherit',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {isPledged ? '✓ Pledged' : 'Pledge'}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {pledges.length > 0 && (
+            <div className="pledges-container" style={{ marginTop: "1.5rem", padding: "1rem", borderRadius: "8px", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+              <div style={{ color: "#10b981", fontWeight: "bold", marginBottom: "0.5rem" }}>🌿 My Action Pledges</div>
+              <ul style={{ paddingLeft: "1.2rem", margin: 0, fontSize: "0.9rem" }}>
+                {pledges.map((p, i) => (
+                  <li key={i} style={{ marginBottom: "0.3rem" }}>{p}</li>
                 ))}
               </ul>
             </div>
           )}
 
           {history.length > 0 && (
-            <div style={{ marginTop: "1rem", textAlign: "right" }}>
+            <div style={{ marginTop: "1.5rem", textAlign: "right" }}>
               <button className="btn-ghost" onClick={clearAll}>
                 🗑️ Clear History
               </button>

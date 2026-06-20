@@ -7,16 +7,23 @@
     "test:frontend": "cd frontend && npx vitest run",
     "test:backend": "cd backend && python3 -m pytest tests/",
     "test": "npm run test:frontend && npm run test:backend",
-    "lint": "eslint . --ext .js,.html"
+    "lint": "eslint frontend/src --ext .js,.jsx"
   },
-  "keywords": ["carbon", "footprint", "tracker", "vanilla-js"],
+  "keywords": [
+    "carbon",
+    "footprint",
+    "tracker",
+    "vanilla-js"
+  ],
   "author": "Vishnu Vardhan Kosuru",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^29.0.0",
-    "jsdom": "^22.0.0",
     "eslint": "^8.0.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.0.0"
+    "eslint-plugin-import": "^2.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jest": "^29.0.0",
+    "jsdom": "^22.0.0"
   }
 }

@@ -22,6 +22,14 @@ export function useHistory() {
     }
   });
 
+  const [pledges, setPledges] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("cf_pledges")) || [];
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   }, [history]);
@@ -29,6 +37,10 @@ export function useHistory() {
   useEffect(() => {
     localStorage.setItem(GOAL_KEY, goal.toString());
   }, [goal]);
+
+  useEffect(() => {
+    localStorage.setItem("cf_pledges", JSON.stringify(pledges));
+  }, [pledges]);
 
   const addRecord = useCallback((record) => {
     setHistory((prev) => {
@@ -41,5 +53,13 @@ export function useHistory() {
 
   const clearAll = useCallback(() => setHistory([]), []);
 
-  return { history, addRecord, clearAll, goal, setGoal };
+  const addPledge = useCallback((pledge) => {
+    setPledges((prev) => prev.includes(pledge) ? prev : [...prev, pledge]);
+  }, []);
+
+  const removePledge = useCallback((pledge) => {
+    setPledges((prev) => prev.filter((p) => p !== pledge));
+  }, []);
+
+  return { history, addRecord, clearAll, goal, setGoal, pledges, addPledge, removePledge };
 }

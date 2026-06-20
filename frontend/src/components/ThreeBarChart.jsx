@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import * as THREE from "three";
 
 export default function ThreeBarChart({ history }) {
@@ -208,3 +209,13 @@ export default function ThreeBarChart({ history }) {
     </div>
   );
 }
+
+ThreeBarChart.propTypes = {
+  history: PropTypes.arrayOf(
+    PropTypes.shape({
+      record_date: PropTypes.string,
+      footprint_kg: PropTypes.number,
+      total_kg: PropTypes.number,
+    })
+  ).isRequired,
+};

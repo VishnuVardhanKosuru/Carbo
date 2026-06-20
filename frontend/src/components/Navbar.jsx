@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 export default function Navbar({ dark, onToggleTheme, apiAvailable }) {
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -26,3 +28,9 @@ export default function Navbar({ dark, onToggleTheme, apiAvailable }) {
     </nav>
   );
 }
+
+Navbar.propTypes = {
+  dark: PropTypes.bool.isRequired,
+  onToggleTheme: PropTypes.func.isRequired,
+  apiAvailable: PropTypes.bool.isRequired,
+};

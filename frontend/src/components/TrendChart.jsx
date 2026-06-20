@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import Chart from "chart.js/auto";
 
 export default function TrendChart({ history }) {
@@ -124,3 +125,13 @@ export default function TrendChart({ history }) {
     </div>
   );
 }
+
+TrendChart.propTypes = {
+  history: PropTypes.arrayOf(
+    PropTypes.shape({
+      record_date: PropTypes.string,
+      footprint_kg: PropTypes.number,
+      total_kg: PropTypes.number,
+    })
+  ).isRequired,
+};
