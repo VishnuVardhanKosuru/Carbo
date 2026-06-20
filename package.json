@@ -1,0 +1,20 @@
+{
+  "name": "carbon-footprint-awareness",
+  "version": "1.0.0",
+  "description": "Pure client‑side carbon footprint tracker with earth‑green premium UI",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint . --ext .js,.html"
+  },
+  "keywords": ["carbon", "footprint", "tracker", "vanilla-js"],
+  "author": "Vishnu Vardhan Kosuru",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "jsdom": "^22.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.0.0"
+  }
+}
