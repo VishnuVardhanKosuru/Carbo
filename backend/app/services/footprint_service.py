@@ -37,10 +37,10 @@ EMISSION_FACTORS: dict[str, Any] = {
 
 # Letter-grade thresholds vs global average
 _GRADE_THRESHOLDS: list[tuple[float, str]] = [
-    (0.50, "A"),   # ≤ 50% of global avg
-    (0.75, "B"),   # ≤ 75%
-    (1.00, "C"),   # ≤ 100% (at global avg)
-    (1.50, "D"),   # ≤ 150%
+    (0.50, "A"),  # ≤ 50% of global avg
+    (0.75, "B"),  # ≤ 75%
+    (1.00, "C"),  # ≤ 100% (at global avg)
+    (1.50, "D"),  # ≤ 150%
     (float("inf"), "E"),  # > 150%
 ]
 
@@ -77,12 +77,14 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     Returns:
         ``FootprintResult`` with per-category breakdown, total, date, and grade.
     """
-    transport_kg = round(request.transport_km * EMISSION_FACTORS["transport_kg_per_km"], 4)
-    energy_kg    = round(request.energy_kwh   * EMISSION_FACTORS["energy_kg_per_kwh"],    4)
-    diet_kg      = EMISSION_FACTORS["diet"][request.diet]
-    total_kg     = round(transport_kg + energy_kg + diet_kg, 2)
-    grade        = _compute_grade(total_kg)
-    record_date  = request.record_date or date.today().isoformat()
+    transport_kg = round(
+        request.transport_km * EMISSION_FACTORS["transport_kg_per_km"], 4
+    )
+    energy_kg = round(request.energy_kwh * EMISSION_FACTORS["energy_kg_per_kwh"], 4)
+    diet_kg = EMISSION_FACTORS["diet"][request.diet]
+    total_kg = round(transport_kg + energy_kg + diet_kg, 2)
+    grade = _compute_grade(total_kg)
+    record_date = request.record_date or date.today().isoformat()
 
     logger.info(
         "Footprint calculated.",

@@ -6,8 +6,11 @@ const KEY = "cf_history_v2";
 
 export function useHistory() {
   const [history, setHistory] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(KEY) || "[]");
+    } catch {
+      return [];
+    }
   });
 
   useEffect(() => {
@@ -17,7 +20,9 @@ export function useHistory() {
   const addRecord = (record) => {
     setHistory((prev) => {
       const filtered = prev.filter((r) => r.record_date !== record.record_date);
-      return [...filtered, record].sort((a, b) => a.record_date.localeCompare(b.record_date));
+      return [...filtered, record].sort((a, b) =>
+        a.record_date.localeCompare(b.record_date),
+      );
     });
   };
 

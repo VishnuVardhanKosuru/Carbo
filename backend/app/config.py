@@ -35,12 +35,18 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = Field(default="Carbo — Carbon Footprint API", description="Application name.")
+    app_name: str = Field(
+        default="Carbo — Carbon Footprint API", description="Application name."
+    )
     version: str = Field(default="2.1.0", description="Semantic version.")
     port: int = Field(default=8001, ge=1, le=65535, description="Listening port.")
     log_level: str = Field(default="INFO", description="Python log level.")
-    allowed_origins: str = Field(default="*", description="Comma-separated CORS origins.")
-    cache_ttl_seconds: int = Field(default=300, ge=0, description="Cache TTL in seconds.")
+    allowed_origins: str = Field(
+        default="*", description="Comma-separated CORS origins."
+    )
+    cache_ttl_seconds: int = Field(
+        default=300, ge=0, description="Cache TTL in seconds."
+    )
     cache_maxsize: int = Field(default=512, ge=1, description="Max cache entries.")
     env: str = Field(default="production", description="Runtime environment.")
 

@@ -9,20 +9,29 @@ async function request(path, options = {}) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw Object.assign(new Error(err.message || "API error"), { status: res.status, data: err });
+    throw Object.assign(new Error(err.message || "API error"), {
+      status: res.status,
+      data: err,
+    });
   }
   return res.json();
 }
 
 export const api = {
-  health:     ()        => request("/health"),
-  cacheStats: ()        => request("/cache/stats"),
-  factors:    ()        => request("/factors"),
+  health: () => request("/health"),
+  cacheStats: () => request("/cache/stats"),
+  factors: () => request("/factors"),
 
-  calculate: (body)     => request("/footprint/calculate", { method: "POST", body: JSON.stringify(body) }),
-  logRecord: (body)     => request("/footprint/log",       { method: "POST", body: JSON.stringify(body) }),
-  getHistory: ()        => request("/footprint/history"),
-  clearHistory: ()      => request("/footprint/history",   { method: "DELETE" }),
+  calculate: (body) =>
+    request("/footprint/calculate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  logRecord: (body) =>
+    request("/footprint/log", { method: "POST", body: JSON.stringify(body) }),
+  getHistory: () => request("/footprint/history"),
+  clearHistory: () => request("/footprint/history", { method: "DELETE" }),
 
-  getTips: (body)       => request("/tips",                { method: "POST", body: JSON.stringify(body) }),
+  getTips: (body) =>
+    request("/tips", { method: "POST", body: JSON.stringify(body) }),
 };

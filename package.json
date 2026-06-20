@@ -4,7 +4,9 @@
   "description": "Pure client‑side carbon footprint tracker with earth‑green premium UI",
   "main": "index.html",
   "scripts": {
-    "test": "jest",
+    "test:frontend": "cd frontend && npx vitest run",
+    "test:backend": "cd backend && python3 -m pytest tests/",
+    "test": "npm run test:frontend && npm run test:backend",
     "lint": "eslint . --ext .js,.html"
   },
   "keywords": ["carbon", "footprint", "tracker", "vanilla-js"],

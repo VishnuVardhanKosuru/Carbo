@@ -9,19 +9,26 @@ const FACTORS = {
 
 function liveCalc(transport, energy, diet) {
   const t = parseFloat(transport) || 0;
-  const e = parseFloat(energy)    || 0;
+  const e = parseFloat(energy) || 0;
   const d = FACTORS.diet[diet] || 3.8;
-  return (t * FACTORS.transport_kg_per_km + e * FACTORS.energy_kg_per_kwh + d).toFixed(2);
+  return (
+    t * FACTORS.transport_kg_per_km +
+    e * FACTORS.energy_kg_per_kwh +
+    d
+  ).toFixed(2);
 }
 
 export default function FootprintForm({ onResult, onTips, apiAvailable }) {
   const [transport, setTransport] = useState("");
-  const [energy,    setEnergy]    = useState("");
-  const [diet,      setDiet]      = useState("average");
-  const [loading,   setLoading]   = useState(false);
-  const [result,    setResult]    = useState(null);
+  const [energy, setEnergy] = useState("");
+  const [diet, setDiet] = useState("average");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const preview = useMemo(() => liveCalc(transport, energy, diet), [transport, energy, diet]);
+  const preview = useMemo(
+    () => liveCalc(transport, energy, diet),
+    [transport, energy, diet],
+  );
 
   const today = () => new Date().toISOString().split("T")[0];
 
@@ -30,7 +37,7 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
     setLoading(true);
     const payload = {
       transport_km: parseFloat(transport) || 0,
-      energy_kwh:   parseFloat(energy)    || 0,
+      energy_kwh: parseFloat(energy) || 0,
       diet,
       record_date: today(),
     };
@@ -50,18 +57,36 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
       } else {
         // Local fallback calculation
         calcResult = {
-          transport_kg: parseFloat((payload.transport_km * FACTORS.transport_kg_per_km).toFixed(4)),
-          energy_kg:    parseFloat((payload.energy_kwh   * FACTORS.energy_kg_per_kwh).toFixed(4)),
-          diet_kg:      FACTORS.diet[payload.diet],
-          total_kg:     parseFloat(preview),
-          record_date:  today(),
-          grade:        parseFloat(preview) / 4.7 <= 0.75 ? "B" : parseFloat(preview) / 4.7 <= 1 ? "C" : "D",
+          transport_kg: parseFloat(
+            (payload.transport_km * FACTORS.transport_kg_per_km).toFixed(4),
+          ),
+          energy_kg: parseFloat(
+            (payload.energy_kwh * FACTORS.energy_kg_per_kwh).toFixed(4),
+          ),
+          diet_kg: FACTORS.diet[payload.diet],
+          total_kg: parseFloat(preview),
+          record_date: today(),
+          grade:
+            parseFloat(preview) / 4.7 <= 0.75
+              ? "B"
+              : parseFloat(preview) / 4.7 <= 1
+                ? "C"
+                : "D",
         };
-        tips = { tips: ["Great effort tracking your footprint! Keep logging daily for insights."] };
+        tips = {
+          tips: [
+            "Great effort tracking your footprint! Keep logging daily for insights.",
+          ],
+        };
       }
 
       setResult(calcResult);
-      onResult?.({ ...calcResult, footprint_kg: calcResult.total_kg, record_date: today(), ...payload });
+      onResult?.({
+        ...calcResult,
+        footprint_kg: calcResult.total_kg,
+        record_date: today(),
+        ...payload,
+      });
       onTips?.(tips);
     } catch (err) {
       console.error("Calculation error:", err);
@@ -71,8 +96,11 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
   }
 
   const gradeColor = result
-    ? ["A","B"].includes(result.grade) ? "#22c55e"
-    : result.grade === "C" ? "#f59e0b" : "#ef4444"
+    ? ["A", "B"].includes(result.grade)
+      ? "#22c55e"
+      : result.grade === "C"
+        ? "#f59e0b"
+        : "#ef4444"
     : "inherit";
 
   return (
@@ -145,13 +173,25 @@ export default function FootprintForm({ onResult, onTips, apiAvailable }) {
         </div>
       </div>
 
-      <button type="submit" id="logBtn" className="btn-primary" disabled={loading}>
+      <button
+        type="submit"
+        id="logBtn"
+        className="btn-primary"
+        disabled={loading}
+      >
         {loading ? "⏳ Calculating…" : "🌿 Calculate & Log"}
       </button>
 
       {result && (
         <div className="result-card" id="footprintResult">
-          <div style={{ display: "flex", alignItems: "baseline", gap: ".4rem", marginBottom: ".4rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: ".4rem",
+              marginBottom: ".4rem",
+            }}
+          >
             <span className="result-grade" style={{ color: gradeColor }}>
               {result.grade}
             </span>

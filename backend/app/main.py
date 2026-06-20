@@ -45,6 +45,7 @@ _LOG_LEVEL_INT = getattr(logging, settings.log_level.upper(), logging.INFO)
 # Structured JSON logging (stdout — parseable by Cloud Run log collector)
 # ---------------------------------------------------------------------------
 
+
 def _configure_logging() -> None:
     """Set up structured JSON logging to stdout."""
     logging.config.dictConfig(
@@ -83,6 +84,7 @@ logger = logging.getLogger(__name__)
 # Security headers middleware
 # ---------------------------------------------------------------------------
 
+
 async def _security_headers_middleware(request: Request, call_next):
     """Attach security headers to every response.
 
@@ -101,17 +103,18 @@ async def _security_headers_middleware(request: Request, call_next):
         HTTP response with security headers attached.
     """
     response = await call_next(request)
-    response.headers["X-Content-Type-Options"]  = "nosniff"
-    response.headers["X-Frame-Options"]         = "DENY"
-    response.headers["X-XSS-Protection"]        = "1; mode=block"
-    response.headers["Referrer-Policy"]         = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"]      = "geolocation=()"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=()"
     return response
 
 
 # ---------------------------------------------------------------------------
 # Lifespan — startup / shutdown
 # ---------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -136,6 +139,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     # Eagerly touch the cache so TTLCache is initialised
     from app import cache as cache_module  # noqa: PLC0415
+
     cache_module.stats()  # warms the singleton
     logger.info("Cache initialised.")
 
@@ -147,6 +151,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 # ---------------------------------------------------------------------------
 # Application factory
 # ---------------------------------------------------------------------------
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application.

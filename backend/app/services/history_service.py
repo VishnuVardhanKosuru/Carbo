@@ -15,7 +15,12 @@ from collections import deque
 from datetime import date
 from typing import Any
 
-from app.models.schemas import DietType, FootprintRecord, HistoryResponse, LogRecordRequest
+from app.models.schemas import (
+    DietType,
+    FootprintRecord,
+    HistoryResponse,
+    LogRecordRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +57,9 @@ def log_record(request: LogRecordRequest) -> FootprintRecord:
     _store = deque(r for r in _store if r.record_date != request.record_date)
     _store.append(record)
 
-    logger.info("Footprint record saved.", extra={"date": request.record_date, "id": record.id})
+    logger.info(
+        "Footprint record saved.", extra={"date": request.record_date, "id": record.id}
+    )
     return record
 
 

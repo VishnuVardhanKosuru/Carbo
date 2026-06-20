@@ -46,25 +46,37 @@ export default function HeroGlobe() {
     const positions = new Float32Array(dotCount * 3);
     for (let i = 0; i < dotCount; i++) {
       const theta = Math.acos(1 - 2 * Math.random());
-      const phi   = Math.random() * Math.PI * 2;
-      positions[i * 3]     = 1.01 * Math.sin(theta) * Math.cos(phi);
+      const phi = Math.random() * Math.PI * 2;
+      positions[i * 3] = 1.01 * Math.sin(theta) * Math.cos(phi);
       positions[i * 3 + 1] = 1.01 * Math.cos(theta);
       positions[i * 3 + 2] = 1.01 * Math.sin(theta) * Math.sin(phi);
     }
     dotGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const dotMat = new THREE.PointsMaterial({ color: 0x4ade80, size: 0.022, sizeAttenuation: true });
+    const dotMat = new THREE.PointsMaterial({
+      color: 0x4ade80,
+      size: 0.022,
+      sizeAttenuation: true,
+    });
     scene.add(new THREE.Points(dotGeo, dotMat));
 
     // Orbit ring
     const ringGeo = new THREE.TorusGeometry(1.25, 0.005, 8, 100);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.35 });
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x4ade80,
+      transparent: true,
+      opacity: 0.35,
+    });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = Math.PI / 2.5;
     scene.add(ring);
 
     // Rim light
     const rimGeo = new THREE.SphereGeometry(1.04, 32, 32);
-    const rimMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.05 });
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: 0x4ade80,
+      transparent: true,
+      opacity: 0.05,
+    });
     scene.add(new THREE.Mesh(rimGeo, rimMat));
 
     // Ambient particle cloud
@@ -74,13 +86,18 @@ export default function HeroGlobe() {
     for (let i = 0; i < cloudN; i++) {
       const r = 1.4 + Math.random() * 0.6;
       const theta = Math.acos(1 - 2 * Math.random());
-      const phi   = Math.random() * Math.PI * 2;
-      cloudPos[i * 3]     = r * Math.sin(theta) * Math.cos(phi);
+      const phi = Math.random() * Math.PI * 2;
+      cloudPos[i * 3] = r * Math.sin(theta) * Math.cos(phi);
       cloudPos[i * 3 + 1] = r * Math.cos(theta);
       cloudPos[i * 3 + 2] = r * Math.sin(theta) * Math.sin(phi);
     }
     cloudGeo.setAttribute("position", new THREE.BufferAttribute(cloudPos, 3));
-    const cloudMat = new THREE.PointsMaterial({ color: 0x86efac, size: 0.008, transparent: true, opacity: 0.5 });
+    const cloudMat = new THREE.PointsMaterial({
+      color: 0x86efac,
+      size: 0.008,
+      transparent: true,
+      opacity: 0.5,
+    });
     scene.add(new THREE.Points(cloudGeo, cloudMat));
 
     // Animation
@@ -88,7 +105,7 @@ export default function HeroGlobe() {
     const animate = () => {
       animId = requestAnimationFrame(animate);
       globe.rotation.y += 0.003;
-      ring.rotation.z  += 0.004;
+      ring.rotation.z += 0.004;
       renderer.render(scene, camera);
     };
     animate();

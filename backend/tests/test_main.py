@@ -54,6 +54,7 @@ from app import cache as cache_module  # noqa: E402
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def client() -> TestClient:
     """Provide a synchronous TestClient for the FastAPI application.
@@ -70,6 +71,7 @@ def reset_history_and_cache():
     """Reset in-memory history store and cache before each test."""
     from app.services import history_service
     from collections import deque
+
     history_service._store = deque()
     cache_module.clear()
     yield
@@ -105,6 +107,7 @@ VALID_MEATLOVER = {
 # Test 1 & 2 — Health check
 # ---------------------------------------------------------------------------
 
+
 def test_health_check_structure(client: TestClient) -> None:
     """Health endpoint should return 200 with status='ok', version, and uptime."""
     response = client.get("/api/v1/health")
@@ -125,18 +128,27 @@ def test_health_check_returns_200(client: TestClient) -> None:
 # Test 3 — Cache stats
 # ---------------------------------------------------------------------------
 
+
 def test_cache_stats_structure(client: TestClient) -> None:
     """Cache stats endpoint should return all expected fields."""
     response = client.get("/api/v1/cache/stats")
     assert response.status_code == 200
     data = response.json()
-    for field in ("hits", "misses", "hit_rate_pct", "current_size", "max_size", "ttl_seconds"):
+    for field in (
+        "hits",
+        "misses",
+        "hit_rate_pct",
+        "current_size",
+        "max_size",
+        "ttl_seconds",
+    ):
         assert field in data, f"Missing field: {field}"
 
 
 # ---------------------------------------------------------------------------
 # Tests 4–6 — Footprint calculation (diet types)
 # ---------------------------------------------------------------------------
+
 
 def test_calculate_average_diet(client: TestClient) -> None:
     """Average diet request should return valid footprint result."""
@@ -168,6 +180,7 @@ def test_calculate_meatlover_diet(client: TestClient) -> None:
 # Tests 7–8 — Zero inputs
 # ---------------------------------------------------------------------------
 
+
 def test_calculate_zero_transport(client: TestClient) -> None:
     """Zero transport should contribute 0 kg transport component."""
     payload = {**VALID_AVERAGE, "transport_km": 0.0}
@@ -188,11 +201,17 @@ def test_calculate_zero_energy(client: TestClient) -> None:
 # Tests 9–10 — Grade boundaries
 # ---------------------------------------------------------------------------
 
+
 def test_grade_a_very_low_emissions(client: TestClient) -> None:
     """Very low emissions should earn grade A or B (vegetarian + zero activity is 53% of global avg = B).
     We verify the grade is better than C (at-or-above average).
     """
-    payload = {"transport_km": 0.0, "energy_kwh": 0.0, "diet": "vegetarian", "record_date": "2026-06-20"}
+    payload = {
+        "transport_km": 0.0,
+        "energy_kwh": 0.0,
+        "diet": "vegetarian",
+        "record_date": "2026-06-20",
+    }
     response = client.post("/api/v1/footprint/calculate", json=payload)
     assert response.status_code == 200
     # 2.5 kg / 4.7 global avg = 53% → grade B (≤ 75%)
@@ -201,7 +220,12 @@ def test_grade_a_very_low_emissions(client: TestClient) -> None:
 
 def test_grade_e_very_high_emissions(client: TestClient) -> None:
     """Very high emissions should earn grade E."""
-    payload = {"transport_km": 500.0, "energy_kwh": 200.0, "diet": "meatlover", "record_date": "2026-06-20"}
+    payload = {
+        "transport_km": 500.0,
+        "energy_kwh": 200.0,
+        "diet": "meatlover",
+        "record_date": "2026-06-20",
+    }
     response = client.post("/api/v1/footprint/calculate", json=payload)
     assert response.status_code == 200
     assert response.json()["grade"] == "E"
@@ -210,6 +234,7 @@ def test_grade_e_very_high_emissions(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # Tests 11–16 — Input validation errors
 # ---------------------------------------------------------------------------
+
 
 def test_negative_transport_returns_422(client: TestClient) -> None:
     """Negative transport_km should return 422 Unprocessable Entity."""
@@ -257,9 +282,15 @@ def test_invalid_date_format_returns_422(client: TestClient) -> None:
 # Tests 17–19 — Emission accuracy
 # ---------------------------------------------------------------------------
 
+
 def test_emission_accuracy_transport(client: TestClient) -> None:
     """Transport kg should equal transport_km × 0.192."""
-    payload = {"transport_km": 50.0, "energy_kwh": 0.0, "diet": "vegetarian", "record_date": "2026-06-20"}
+    payload = {
+        "transport_km": 50.0,
+        "energy_kwh": 0.0,
+        "diet": "vegetarian",
+        "record_date": "2026-06-20",
+    }
     response = client.post("/api/v1/footprint/calculate", json=payload)
     assert response.status_code == 200
     expected = round(50.0 * 0.192, 4)
@@ -268,7 +299,12 @@ def test_emission_accuracy_transport(client: TestClient) -> None:
 
 def test_emission_accuracy_energy(client: TestClient) -> None:
     """Energy kg should equal energy_kwh × 0.233."""
-    payload = {"transport_km": 0.0, "energy_kwh": 20.0, "diet": "vegetarian", "record_date": "2026-06-20"}
+    payload = {
+        "transport_km": 0.0,
+        "energy_kwh": 20.0,
+        "diet": "vegetarian",
+        "record_date": "2026-06-20",
+    }
     response = client.post("/api/v1/footprint/calculate", json=payload)
     assert response.status_code == 200
     expected = round(20.0 * 0.233, 4)
@@ -279,7 +315,12 @@ def test_emission_accuracy_diet_component(client: TestClient) -> None:
     """Diet component should be exactly the factor for the chosen diet type."""
     factors = {"vegetarian": 2.5, "average": 3.8, "meatlover": 5.0}
     for diet, expected_kg in factors.items():
-        payload = {"transport_km": 0.0, "energy_kwh": 0.0, "diet": diet, "record_date": "2026-06-20"}
+        payload = {
+            "transport_km": 0.0,
+            "energy_kwh": 0.0,
+            "diet": diet,
+            "record_date": "2026-06-20",
+        }
         response = client.post("/api/v1/footprint/calculate", json=payload)
         assert response.status_code == 200, f"Failed for diet={diet}"
         assert response.json()["diet_kg"] == expected_kg, f"Wrong diet_kg for {diet}"
@@ -288,6 +329,7 @@ def test_emission_accuracy_diet_component(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # Test 20 — Cache hit
 # ---------------------------------------------------------------------------
+
 
 def test_cache_hit_on_repeated_request(client: TestClient) -> None:
     """A second identical request should increment the cache hit counter."""
@@ -306,6 +348,7 @@ def test_cache_hit_on_repeated_request(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # Tests 21–22 — Log footprint
 # ---------------------------------------------------------------------------
+
 
 def test_log_footprint_record_success(client: TestClient) -> None:
     """Logging a record should return 201 with the record data."""
@@ -326,12 +369,18 @@ def test_log_footprint_record_success(client: TestClient) -> None:
 def test_log_footprint_upsert_replaces_same_date(client: TestClient) -> None:
     """Logging two records for the same date should result in only one record."""
     payload_v1 = {
-        "transport_km": 5.0, "energy_kwh": 4.0, "diet": "vegetarian",
-        "footprint_kg": 5.0, "record_date": "2026-06-20",
+        "transport_km": 5.0,
+        "energy_kwh": 4.0,
+        "diet": "vegetarian",
+        "footprint_kg": 5.0,
+        "record_date": "2026-06-20",
     }
     payload_v2 = {
-        "transport_km": 10.0, "energy_kwh": 8.0, "diet": "meatlover",
-        "footprint_kg": 10.0, "record_date": "2026-06-20",
+        "transport_km": 10.0,
+        "energy_kwh": 8.0,
+        "diet": "meatlover",
+        "footprint_kg": 10.0,
+        "record_date": "2026-06-20",
     }
     client.post("/api/v1/footprint/log", json=payload_v1)
     client.post("/api/v1/footprint/log", json=payload_v2)
@@ -345,6 +394,7 @@ def test_log_footprint_upsert_replaces_same_date(client: TestClient) -> None:
 # Tests 23–25 — History
 # ---------------------------------------------------------------------------
 
+
 def test_get_history_empty(client: TestClient) -> None:
     """History should be empty initially."""
     response = client.get("/api/v1/footprint/history")
@@ -357,9 +407,27 @@ def test_get_history_empty(client: TestClient) -> None:
 def test_get_history_populated_sorted(client: TestClient) -> None:
     """History should return records sorted by date ascending."""
     records = [
-        {"transport_km": 5.0, "energy_kwh": 3.0, "diet": "vegetarian", "footprint_kg": 4.0, "record_date": "2026-06-22"},
-        {"transport_km": 5.0, "energy_kwh": 3.0, "diet": "vegetarian", "footprint_kg": 4.0, "record_date": "2026-06-20"},
-        {"transport_km": 5.0, "energy_kwh": 3.0, "diet": "vegetarian", "footprint_kg": 4.0, "record_date": "2026-06-21"},
+        {
+            "transport_km": 5.0,
+            "energy_kwh": 3.0,
+            "diet": "vegetarian",
+            "footprint_kg": 4.0,
+            "record_date": "2026-06-22",
+        },
+        {
+            "transport_km": 5.0,
+            "energy_kwh": 3.0,
+            "diet": "vegetarian",
+            "footprint_kg": 4.0,
+            "record_date": "2026-06-20",
+        },
+        {
+            "transport_km": 5.0,
+            "energy_kwh": 3.0,
+            "diet": "vegetarian",
+            "footprint_kg": 4.0,
+            "record_date": "2026-06-21",
+        },
     ]
     for r in records:
         client.post("/api/v1/footprint/log", json=r)
@@ -372,7 +440,13 @@ def test_get_history_populated_sorted(client: TestClient) -> None:
 
 def test_clear_history(client: TestClient) -> None:
     """Clear endpoint should delete all records."""
-    payload = {"transport_km": 5.0, "energy_kwh": 3.0, "diet": "vegetarian", "footprint_kg": 4.0, "record_date": "2026-06-20"}
+    payload = {
+        "transport_km": 5.0,
+        "energy_kwh": 3.0,
+        "diet": "vegetarian",
+        "footprint_kg": 4.0,
+        "record_date": "2026-06-20",
+    }
     client.post("/api/v1/footprint/log", json=payload)
     response = client.delete("/api/v1/footprint/history")
     assert response.status_code == 200
@@ -384,6 +458,7 @@ def test_clear_history(client: TestClient) -> None:
 # Tests 26–29 — Tips
 # ---------------------------------------------------------------------------
 
+
 def test_tips_transport_heavy(client: TestClient) -> None:
     """Transport > 10 km should include a transport-specific tip."""
     payload = {"transport_km": 50.0, "energy_kwh": 5.0, "diet": "average"}
@@ -391,7 +466,10 @@ def test_tips_transport_heavy(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["transport_tip"] is not None
-    assert any("transport" in t.lower() or "public" in t.lower() or "car" in t.lower() for t in data["tips"])
+    assert any(
+        "transport" in t.lower() or "public" in t.lower() or "car" in t.lower()
+        for t in data["tips"]
+    )
 
 
 def test_tips_energy_heavy(client: TestClient) -> None:
@@ -420,12 +498,16 @@ def test_tips_low_emissions_positive(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert len(data["tips"]) >= 1
-    assert any("great" in t.lower() or "excellent" in t.lower() or "keep" in t.lower() for t in data["tips"])
+    assert any(
+        "great" in t.lower() or "excellent" in t.lower() or "keep" in t.lower()
+        for t in data["tips"]
+    )
 
 
 # ---------------------------------------------------------------------------
 # Test 30 — Emission factors
 # ---------------------------------------------------------------------------
+
 
 def test_emission_factors_structure(client: TestClient) -> None:
     """Factors endpoint should return all required keys."""
@@ -443,6 +525,7 @@ def test_emission_factors_structure(client: TestClient) -> None:
 # Test 31 — Security headers
 # ---------------------------------------------------------------------------
 
+
 def test_security_headers_present(client: TestClient) -> None:
     """Every response should include OWASP security headers."""
     response = client.get("/api/v1/health")
@@ -455,6 +538,7 @@ def test_security_headers_present(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # Test 32 — GZip compression
 # ---------------------------------------------------------------------------
+
 
 def test_gzip_compresses_large_response(client: TestClient) -> None:
     """GZip middleware should compress large payloads when Accept-Encoding: gzip."""

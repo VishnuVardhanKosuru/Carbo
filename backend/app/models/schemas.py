@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class DietType(str, Enum):
     """Supported diet categories with associated emission factors."""
+
     vegetarian = "vegetarian"
     average = "average"
     meatlover = "meatlover"
